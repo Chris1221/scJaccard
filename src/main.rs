@@ -7,6 +7,7 @@ use log::info;
 use env_logger::Env;
 use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
+use std::sync::Arc;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -30,9 +31,9 @@ struct Opt {
 }
 
 struct Record {
-    i: u32,
-    j: u32,
-    val: u32
+    i: u32
+    //j: u32,
+    //val: u32
 }
 
 #[derive(Clone)]
@@ -75,6 +76,32 @@ fn parse_bed_line(line: Vec<u8>) -> Region {
         start: r[1].parse::<u32>().unwrap(),
         stop: r[2].parse::<u32>().unwrap()
     }
+}
+
+fn total_isec(cell_barcode: &String, 
+              records: &Vec<Record>,
+              path_bed: &PathBuf,
+              regions: &HashMap<String, Region>) -> (String, u32) {
+
+    let mut tbx_reader = tbx::Reader::from_path(path_bed).unwrap();
+    let mut isec = 0;
+    for r in records { 
+        let reg = &regions[&r.i.to_string()];
+        let tid = tbx_reader.tid(&reg.chr).unwrap();
+        tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
+
+
+        for record in tbx_reader.records() {
+            let parsed_region = parse_bed_line(record.unwrap());
+            isec += get_intersection(reg, &parsed_region);
+        }
+
+    }
+
+    let bar = cell_barcode.clone();
+
+    return (bar, isec as u32);
+    
 }
 
 fn main() -> std::io::Result<()> {
@@ -146,8 +173,9 @@ fn main() -> std::io::Result<()> {
 
                     mtx.get_mut(&idx).unwrap().push(Record {
                                     i: vec[0].parse::<u32>().unwrap(), 
-                                    j: vec[1].parse::<u32>().unwrap(), 
-                                    val: vec[2].parse::<u32>().unwrap()});
+                                    //j: vec[1].parse::<u32>().unwrap(), 
+                                    //val: vec[2].parse::<u32>().unwrap()
+                                    });
                     stats.insert(vec[1].to_string(),
                                  Cell { 
                                      isec: 0, 
@@ -159,9 +187,10 @@ fn main() -> std::io::Result<()> {
                         .get_mut(&idx)
                         .unwrap()
                         .push(Record {
-                            i: vec[0].parse::<u32>().unwrap(), 
-                            j: vec[1].parse::<u32>().unwrap(), 
-                            val: vec[2].parse::<u32>().unwrap()});
+                            i: vec[0].parse::<u32>().unwrap()
+                            //j: vec[1].parse::<u32>().unwrap(), 
+                            //val: vec[2].parse::<u32>().unwrap()
+                            });
                     stats
                         .get_mut(&vec[1].to_string())
                         .unwrap()
@@ -199,8 +228,13 @@ fn main() -> std::io::Result<()> {
 
     println!("total {}", known.union);
 
+    println!("Threads: {}", rayon::current_num_threads());
+    let isec: HashMap<String, u32> = mtx.par_iter()
+        .map(|(key,value)| total_isec(key, value, &path_bed, &regions))
+        .collect::<HashMap<String, u32>>();
 
-    for (key, value) in mtx { 
+
+    /*for (key, value) in mtx { 
         for r in value{
             let reg = &regions[&r.i.to_string()];
             let tid = tbx_reader.tid(&reg.chr).unwrap();
@@ -216,6 +250,7 @@ fn main() -> std::io::Result<()> {
             }
 
     }}
+    */
 
     for (key, value) in stats {
         println!("Isec: {}, Union: {}", value.isec, value.union);
@@ -223,3 +258,4 @@ fn main() -> std::io::Result<()> {
 
     Ok(())
 }
+
