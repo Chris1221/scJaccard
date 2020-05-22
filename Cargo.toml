@@ -2,7 +2,7 @@
 name = "scJaccard"
 version = "0.1.0"
 authors = ["Christopher Cole <ccole@well.ox.ac.uk>"]
-edition = "2020"
+edition = "2018"
 
 [dependencies]
 structopt = "0.3.14"
