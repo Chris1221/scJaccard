@@ -7,7 +7,6 @@ use log::info;
 use env_logger::Env;
 use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
-use std::sync::Arc;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -52,6 +51,14 @@ impl Region {
 struct Cell {
     isec: u32,
     union: u32
+}
+
+impl Cell { 
+    fn jaccard(&self) -> f64 { 
+        let jac = self.isec as f64 / (self.union as f64 - self.isec as f64);
+        return jac as f64
+    }
+
 }
 
 fn get_intersection(interval1: &Region, 
@@ -233,8 +240,17 @@ fn main() -> std::io::Result<()> {
         .map(|(key,value)| total_isec(key, value, &path_bed, &regions))
         .collect::<HashMap<String, u32>>();
 
+    for (key, value) in isec {
+        stats
+            .get_mut(&key)
+            .unwrap()
+            .isec += value
+    }
 
-    /*for (key, value) in mtx { 
+
+    /* Old for loop version; depricated in favour of mapping.
+     *
+    for (key, value) in mtx { 
         for r in value{
             let reg = &regions[&r.i.to_string()];
             let tid = tbx_reader.tid(&reg.chr).unwrap();
@@ -253,7 +269,7 @@ fn main() -> std::io::Result<()> {
     */
 
     for (key, value) in stats {
-        println!("Isec: {}, Union: {}", value.isec, value.union);
+        println!("Cell: {}, Isec: {}, Union: {}, Jaccard {}", key, value.isec, value.union, value.jaccard());
     }
 
     Ok(())
