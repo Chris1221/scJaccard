@@ -1,3 +1,29 @@
+//! `scJaccard` is a tool for quantifying the overlap between single cell peak calls and known
+//! purified cell types. 
+//!
+//! To use this tool, you need:
+//!     - Peak calls in triplet MatrixMarket format (see
+//!     [here](https://math.nist.gov/MatrixMarket/formats.html) for details)
+//!     - Known peaks in `.bed` format, sorted and index by `tabix`.
+//!
+//! To run the tool, simply give the paths as arguments.
+//!
+//! ```sh
+//! scJaccard --input   path/to/matrixMarket \
+//!           --bed     path/to/file.bed \
+//!           --atac    path/to/atac.bed
+//! ```
+//!
+//! ## Input Formats
+//!
+//! 1. MatrixMarket. 
+//! 2. Indexed `bed`.
+//!
+//! ## Associated Tools
+//!
+//! This tool has been created as a part of the `avocato` single cell Assay for
+//! Transposase-Accessible Chromatin using sequencing (scATAC-seq) pipeline.  
+
 use std::path::PathBuf;
 use structopt::StructOpt;
 use std::fs::File;
@@ -8,6 +34,8 @@ use env_logger::Env;
 use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
 
+mod utils;
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
 struct Opt {
@@ -15,10 +43,6 @@ struct Opt {
     /// Input file
     #[structopt(short, long)]
     input: PathBuf,
-
-    /// Output file
-    #[structopt(short, long, parse(from_os_str))]
-    output: PathBuf,
 
     /// Bed file
     #[structopt(short, long, parse(from_os_str))]
@@ -162,6 +186,7 @@ fn main() -> std::io::Result<()> {
     // for the file connection.
     
     info!("Reading MatrixMarket data.");
+    let mut first: bool = true;
     let mut mtx = HashMap::new();
     {
         let file = File::open(opt.input)?;
@@ -169,7 +194,6 @@ fn main() -> std::io::Result<()> {
 
         for line in reader.lines() {
             let vec = line?;
-            //println!("{:?}", vec);
             if !vec.starts_with('%') {
                 let vec = vec.split(" ");
                 let vec = vec.collect::<Vec<&str>>();
