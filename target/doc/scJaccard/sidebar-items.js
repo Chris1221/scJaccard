@@ -1,1 +1,0 @@
-initSidebarItems({"fn":[["get_intersection",""],["main",""],["parse_bed_line",""],["total_isec",""]],"mod":[["utils",""]],"struct":[["Cell",""],["Opt",""],["Record",""],["Region",""]]});
