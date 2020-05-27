@@ -1,5 +1,7 @@
 # `scJaccard`
 
+[![Build Status](https://travis-ci.com/Chris1221/scJaccard.svg?token=m6xQLa7Y73oDMTe7kHqw&branch=master)](https://travis-ci.com/Chris1221/scJaccard)
+
 A `Rust` command line tool for computing the continuous Jaccard index (a la `bedtools`) per single cell.  
 
 ## Installation
