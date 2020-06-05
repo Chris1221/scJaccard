@@ -34,7 +34,7 @@ use env_logger::Env;
 use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
 
-mod utils;
+//mod utils;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -47,6 +47,10 @@ struct Opt {
     /// Bed file
     #[structopt(short, long, parse(from_os_str))]
     bed: PathBuf,
+
+    /// Barcodes 
+    #[structopt(long, parse(from_os_str))]
+    barcodes: PathBuf,
 
     /// Known ATAC peaks
     #[structopt(short, long, parse(from_os_str))]
@@ -148,6 +152,21 @@ fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env);
 
     let mut stats = HashMap::new();
+
+    // Parse the barcodes tsv file.
+    info!("Reading barcodes.");
+    let mut barcodes = HashMap::new();
+    {
+       let bcodes = File::open(&opt.barcodes)?;
+       let bcodes_reader = BufReader::new(bcodes);
+
+       let mut r = 1;
+       for line in bcodes_reader.lines() {
+           barcodes.insert(r.to_string(),
+            line?);
+           r += 1
+       }
+    }
 
     // Parse the regions in the bed file
     // to create a hashmap of regions 
@@ -293,7 +312,8 @@ fn main() -> std::io::Result<()> {
     */
 
     for (key, value) in stats {
-        println!("Cell: {}, Isec: {}, Union: {}, Jaccard {}", key, value.isec, value.union, value.jaccard());
+        //println!("Cell: {}, Isec: {}, Union: {}, Jaccard {}", barcodes[&key.to_string()], value.isec, value.union, value.jaccard());
+        println!("{}\t{}", barcodes[&key.to_string()], value.jaccard())
     }
 
     Ok(())
