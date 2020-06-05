@@ -88,8 +88,8 @@ struct Cell {
 }
 
 impl Cell { 
-    fn jaccard(&self) -> f64 { 
-        let jac = self.isec as f64 / (self.union as f64 - self.isec as f64);
+    fn jaccard(&self, known: f64) -> f64 { 
+        let jac = self.isec as f64 / (self.union as f64 + known - self.isec as f64);
         return jac as f64
     }
 
@@ -257,7 +257,7 @@ fn main() -> std::io::Result<()> {
 
             } 
     } 
-    println!("Number of records for 1: {}", stats["1"].union);
+    //println!("Number of records for 1: {}", stats["1"].union);
     info!("Reading known regions.");
     let path_bed = opt.atac;
     let mut tbx_reader = tbx::Reader::from_path(&path_bed).unwrap();
@@ -282,9 +282,9 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    println!("total {}", known.union);
+    //println!("total {}", known.union);
 
-    println!("Threads: {}", rayon::current_num_threads());
+    info!("Using {} threads.", rayon::current_num_threads());
     let isec: HashMap<String, u32> = mtx.par_iter()
         .map(|(key,value)| total_isec(key, value, &path_bed, &regions))
         .collect::<HashMap<String, u32>>();
@@ -296,19 +296,17 @@ fn main() -> std::io::Result<()> {
             .isec += value
     }
 
-    println!("{}", stats.len());
+    info!("Computed jaccard for {} cells.", stats.len());
+    info!("Writing output to {:?}.", &opt.output);
 
-    let mut output = File::create(opt.output)?;
-    
+    let mut output = File::create(opt.output)?; 
     for (key, value) in stats {
-
         let mut s = String::new();
-        write!(s, "{} {}\n", barcodes[&key.to_string()], value.jaccard()).unwrap();
+        write!(s, "{} {}\n", barcodes[&key.to_string()], value.jaccard(*&known.union as f64)).unwrap();
         output.write(s.as_bytes())?;
-
-
     }
 
+    info!("scJaccard finished successfully.");
     Ok(())
 }
 
