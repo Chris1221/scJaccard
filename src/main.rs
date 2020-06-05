@@ -24,6 +24,7 @@
 //! This tool has been created as a part of the `avocato` single cell Assay for
 //! Transposase-Accessible Chromatin using sequencing (scATAC-seq) pipeline.  
 
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use std::fs::File;
@@ -33,6 +34,7 @@ use log::info;
 use env_logger::Env;
 use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
+use std::fmt::Write as OtherWrite;
 
 //mod utils;
 
@@ -54,7 +56,11 @@ struct Opt {
 
     /// Known ATAC peaks
     #[structopt(short, long, parse(from_os_str))]
-    atac: PathBuf
+    atac: PathBuf,
+
+    /// Output path 
+    #[structopt(short, long, parse(from_os_str))]
+    output: PathBuf
 }
 
 struct Record {
@@ -290,30 +296,15 @@ fn main() -> std::io::Result<()> {
             .isec += value
     }
 
-
-    /* Old for loop version; depricated in favour of mapping.
-     *
-    for (key, value) in mtx { 
-        for r in value{
-            let reg = &regions[&r.i.to_string()];
-            let tid = tbx_reader.tid(&reg.chr).unwrap();
-            tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
-
-            for record in tbx_reader.records() {
-                let parsed_region = parse_bed_line(record.unwrap());
-                //let reg = reg;
-                stats
-                    .get_mut(&key)
-                    .unwrap()
-                    .isec += get_intersection(reg, &parsed_region);
-            }
-
-    }}
-    */
-
+    let mut output = File::create(opt.output)?;
+    
+    let mut s = String::new();
     for (key, value) in stats {
-        //println!("Cell: {}, Isec: {}, Union: {}, Jaccard {}", barcodes[&key.to_string()], value.isec, value.union, value.jaccard());
-        println!("{}\t{}", barcodes[&key.to_string()], value.jaccard())
+
+        write!(s, "{} {}\n", barcodes[&key.to_string()], value.jaccard()).unwrap();
+        output.write(s.as_bytes())?;
+
+
     }
 
     Ok(())
