@@ -296,11 +296,13 @@ fn main() -> std::io::Result<()> {
             .isec += value
     }
 
+    println!("{}", stats.len());
+
     let mut output = File::create(opt.output)?;
     
-    let mut s = String::new();
     for (key, value) in stats {
 
+        let mut s = String::new();
         write!(s, "{} {}\n", barcodes[&key.to_string()], value.jaccard()).unwrap();
         output.write(s.as_bytes())?;
 
