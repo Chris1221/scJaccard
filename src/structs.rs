@@ -24,7 +24,11 @@ pub struct Opt {
 
     /// Output path 
     #[structopt(short, long, parse(from_os_str))]
-    pub output: PathBuf
+    pub output: PathBuf,
+
+    /// Number of contigs in the ATAC file to iterate over. Defaults to 22. 
+    #[structopt(long, default_value = "22")]
+    pub nchr: u64
 }
 
 pub struct Record {

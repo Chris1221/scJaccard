@@ -115,6 +115,7 @@ fn main() -> std::io::Result<()> {
     // for the file connection.
     
     info!("Reading MatrixMarket data.");
+    let mut first: bool = true; 
     let mut mtx = HashMap::with_capacity(n_cells);
     {
         let file = File::open(&opt.input)?;
@@ -123,6 +124,12 @@ fn main() -> std::io::Result<()> {
         for line in reader.lines() {
             let vec = line?;
             if !vec.starts_with('%') {
+                // Skip the first numeric line as we 
+                // use it for pre-allocation.
+                if first { 
+                    first = false;
+                    continue; 
+                } 
                 let vec = vec.split(" ");
                 let vec = vec.collect::<Vec<&str>>();
                 if !&mtx.contains_key(&vec[1].to_string()) {
@@ -171,11 +178,13 @@ fn main() -> std::io::Result<()> {
         union: 0 
     };
 
+    let nchr: u64 = opt.nchr;
+
     // Go through the records once and get the sum 
     // There is no .fetch_string() impl for tbx::Reader
     // so I'm just going to go through the chromosomes manually and
     // do it.
-    for i in 1..22 { 
+    for i in 0..nchr { 
         tbx_reader
             .fetch(i, 0, 1000000000).unwrap(); // All of it?
         for record in tbx_reader.records() { 
