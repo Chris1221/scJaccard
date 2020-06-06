@@ -1,6 +1,9 @@
+use std::io::{BufRead, BufReader};
+use std::fs::File;
 use std::path::PathBuf;
-
-
+use std::collections::HashMap;
+use rust_htslib::tbx::{self, Read};
+use crate::structs;
 
 /// Determines the number of cells to pre-allocate space 
 /// for a HashMap.
@@ -16,15 +19,68 @@ use std::path::PathBuf;
 /// ```
 /// let n: usize = count_cells(path);
 /// ```
-pub fn count_cells (path: &PathBuf) -> usize {
-    let file = File::open(opt.input)?;
+pub fn count_cells (path: &PathBuf) -> Result<usize, std::io::Error> {
+    let file = File::open(path)?;
     let reader = BufReader::new(file);
+    let mut n: usize = 0;
 
     for line in reader.lines() {
         let vec = line?;
         if !vec.starts_with('%') {
-            vec[1].parse<usize>()
+            let vec = vec.split(" ");
+            let vec = vec.collect::<Vec<&str>>();
+            n = vec[1].parse::<usize>().unwrap();
+        }
+    }
+    Ok(n)
+}
 
+pub fn get_intersection(interval1: &structs::Region, 
+                    interval2: &structs::Region) -> u32 {
+
+    if interval2.start > interval1.stop || interval1.start > interval2.stop {
+        return 0; // does not contribute
+    }
+
+    let start = std::cmp::max(interval1.start, interval2.start);
+    let stop = std::cmp::min(interval1.stop, interval2.stop);
+
+    return stop - start;
+}
+
+pub fn parse_bed_line(line: Vec<u8>) -> structs::Region {
+    let r = String::from_utf8(line).unwrap();
+    let r = r.split("\t").collect::<Vec<&str>>();
+
+    return structs::Region {
+        chr: r[0].to_string(),
+        start: r[1].parse::<u32>().unwrap(),
+        stop: r[2].parse::<u32>().unwrap()
+    }
+}
+
+pub fn total_isec(cell_barcode: &String, 
+              records: &Vec<structs::Record>,
+              path_bed: &PathBuf,
+              regions: &HashMap<String, structs::Region>) -> (String, u32) {
+
+    let mut tbx_reader = tbx::Reader::from_path(path_bed).unwrap();
+    let mut isec = 0;
+    for r in records { 
+        let reg = &regions[&r.i.to_string()];
+        let tid = tbx_reader.tid(&reg.chr).unwrap();
+        tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
+
+
+        for record in tbx_reader.records() {
+            let parsed_region = parse_bed_line(record.unwrap());
+            isec += get_intersection(reg, &parsed_region);
         }
 
+    }
+
+    let bar = cell_barcode.clone();
+
+    return (bar, isec as u32);
+    
 }

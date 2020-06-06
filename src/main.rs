@@ -23,9 +23,14 @@
 //!
 //! This tool has been created as a part of the `avocato` single cell Assay for
 //! Transposase-Accessible Chromatin using sequencing (scATAC-seq) pipeline.  
+//!
+
+// This is a bit overkill because it turns off
+// linting for the whole program, but I hate this
+// warning.
+#![allow(non_snake_case)]
 
 use std::io::Write;
-use std::path::PathBuf;
 use structopt::StructOpt;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
@@ -36,119 +41,13 @@ use rust_htslib::tbx::{self, Read};
 use rayon::prelude::*;
 use std::fmt::Write as OtherWrite;
 
-//mod utils;
-
-#[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
-struct Opt {
-
-    /// Input file
-    #[structopt(short, long)]
-    input: PathBuf,
-
-    /// Bed file
-    #[structopt(short, long, parse(from_os_str))]
-    bed: PathBuf,
-
-    /// Barcodes 
-    #[structopt(long, parse(from_os_str))]
-    barcodes: PathBuf,
-
-    /// Known ATAC peaks
-    #[structopt(short, long, parse(from_os_str))]
-    atac: PathBuf,
-
-    /// Output path 
-    #[structopt(short, long, parse(from_os_str))]
-    output: PathBuf
-}
-
-struct Record {
-    i: u32
-    //j: u32,
-    //val: u32
-}
-
-#[derive(Clone)]
-struct Region {
-    chr: String,
-    start: u32,
-    stop: u32
-}
-
-impl Region { 
-    fn total(&self) -> u32 { 
-        return self.stop - self.start
-    }
-}
-
-struct Cell {
-    isec: u32,
-    union: u32
-}
-
-impl Cell { 
-    fn jaccard(&self, known: f64) -> f64 { 
-        let jac = self.isec as f64 / (self.union as f64 + known - self.isec as f64);
-        return jac as f64
-    }
-
-}
-
-fn get_intersection(interval1: &Region, 
-                    interval2: &Region) -> u32 {
-
-    if interval2.start > interval1.stop || interval1.start > interval2.stop {
-        return 0; // does not contribute
-    }
-
-    let start = std::cmp::max(interval1.start, interval2.start);
-    let stop = std::cmp::min(interval1.stop, interval2.stop);
-
-    return stop - start;
-}
-
-fn parse_bed_line(line: Vec<u8>) -> Region {
-    let r = String::from_utf8(line).unwrap();
-    let r = r.split("\t").collect::<Vec<&str>>();
-
-    return Region {
-        chr: r[0].to_string(),
-        start: r[1].parse::<u32>().unwrap(),
-        stop: r[2].parse::<u32>().unwrap()
-    }
-}
-
-fn total_isec(cell_barcode: &String, 
-              records: &Vec<Record>,
-              path_bed: &PathBuf,
-              regions: &HashMap<String, Region>) -> (String, u32) {
-
-    let mut tbx_reader = tbx::Reader::from_path(path_bed).unwrap();
-    let mut isec = 0;
-    for r in records { 
-        let reg = &regions[&r.i.to_string()];
-        let tid = tbx_reader.tid(&reg.chr).unwrap();
-        tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
-
-
-        for record in tbx_reader.records() {
-            let parsed_region = parse_bed_line(record.unwrap());
-            isec += get_intersection(reg, &parsed_region);
-        }
-
-    }
-
-    let bar = cell_barcode.clone();
-
-    return (bar, isec as u32);
-    
-}
+mod utils;
+mod structs;
 
 fn main() -> std::io::Result<()> {
     // Parse options using structopt
     // Requires update of crates.
-    let opt = Opt::from_args();
+    let opt = structs::Opt::from_args();
 
     // I want a logger, but I want to 
     // control it.
@@ -193,7 +92,7 @@ fn main() -> std::io::Result<()> {
             // Insert a new record with the numeric index as 
             // the hashed portion.
             regions.insert(r.to_string(), 
-                       Region {
+                       structs::Region {
                            chr: vec[0].to_string(),
                            start: vec[1].parse::<u32>().unwrap(),
                            stop: vec[2].parse::<u32>().unwrap() });
@@ -201,6 +100,11 @@ fn main() -> std::io::Result<()> {
         }
 
     }
+
+    // Figure out how many cells there are
+    // in order to preallocate that memory
+    // for the HashMap.
+    let n_cells: usize = utils::count_cells(&opt.input)?;
 
     // Parse the MatrixMarket format file
     // to obtain a hashmap of region (indices)
@@ -211,10 +115,9 @@ fn main() -> std::io::Result<()> {
     // for the file connection.
     
     info!("Reading MatrixMarket data.");
-    let mut first: bool = true;
-    let mut mtx = HashMap::new();
+    let mut mtx = HashMap::with_capacity(n_cells);
     {
-        let file = File::open(opt.input)?;
+        let file = File::open(&opt.input)?;
         let reader = BufReader::new(file);
 
         for line in reader.lines() {
@@ -225,15 +128,15 @@ fn main() -> std::io::Result<()> {
                 if !&mtx.contains_key(&vec[1].to_string()) {
                     let idx = vec[1].to_string();
                     mtx.insert(vec[1].to_string(), 
-                               Vec::<Record>::new());
+                               Vec::<structs::Record>::new());
 
-                    mtx.get_mut(&idx).unwrap().push(Record {
+                    mtx.get_mut(&idx).unwrap().push(structs::Record {
                                     i: vec[0].parse::<u32>().unwrap(), 
                                     //j: vec[1].parse::<u32>().unwrap(), 
                                     //val: vec[2].parse::<u32>().unwrap()
                                     });
                     stats.insert(vec[1].to_string(),
-                                 Cell { 
+                                 structs::Cell { 
                                      isec: 0, 
                                      union: regions[&vec[0].to_string()].total() });
                                         
@@ -242,7 +145,7 @@ fn main() -> std::io::Result<()> {
                     mtx
                         .get_mut(&idx)
                         .unwrap()
-                        .push(Record {
+                        .push(structs::Record {
                             i: vec[0].parse::<u32>().unwrap()
                             //j: vec[1].parse::<u32>().unwrap(), 
                             //val: vec[2].parse::<u32>().unwrap()
@@ -263,7 +166,7 @@ fn main() -> std::io::Result<()> {
     let mut tbx_reader = tbx::Reader::from_path(&path_bed).unwrap();
 
     // Holder for the totals.
-    let mut known = Cell{ 
+    let mut known = structs::Cell{ 
         isec: 0, 
         union: 0 
     };
@@ -276,7 +179,7 @@ fn main() -> std::io::Result<()> {
         tbx_reader
             .fetch(i, 0, 1000000000).unwrap(); // All of it?
         for record in tbx_reader.records() { 
-            let r = parse_bed_line(record.unwrap());
+            let r = utils::parse_bed_line(record.unwrap());
             known
                 .union += r.total();
         }
@@ -286,7 +189,7 @@ fn main() -> std::io::Result<()> {
 
     info!("Using {} threads.", rayon::current_num_threads());
     let isec: HashMap<String, u32> = mtx.par_iter()
-        .map(|(key,value)| total_isec(key, value, &path_bed, &regions))
+        .map(|(key,value)| utils::total_isec(key, value, &path_bed, &regions))
         .collect::<HashMap<String, u32>>();
 
     for (key, value) in isec {
