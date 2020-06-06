@@ -1,6 +1,5 @@
 use assert_cmd::prelude::*;
 use std::process::Command;
-use std::process::ExitStatus;
 
 fn sc_jaccard() -> std::process::Command { 
     Command::cargo_bin("scJaccard").unwrap()
@@ -14,12 +13,12 @@ fn help() {
 #[test]
 fn test_success_run() { 
     let out = sc_jaccard()
-        .args(&["-i", "example_data/test.mtx", "--atac", "example_data/target.bed.gz", "--barcodes", "example_data/test.tsv", "--nchr", "1", "--loglevel", "warn", "--bed", "example_data/test.bed"])
+        .args(&["-i", "example_data/test.mtx", "--atac", "example_data/target.bed.gz", "--barcodes", "example_data/test.tsv", "--nchr", "1", "--loglevel", "warn", "--bed", "example_data/test.bed", "--cores", "1"])
         .assert();
 
     let output = out
         .get_output();
-    let known_out = "barcode2 0.14286\nbarcode1 0.33333\n";
+    let known_out = "barcode1 0.33333\nbarcode2 0.14286\n";
 
     println!("{:?}", output);
     println!("{:?}", out);

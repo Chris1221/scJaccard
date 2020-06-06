@@ -49,6 +49,9 @@ fn main() -> std::io::Result<()> {
     // Requires update of crates.
     let opt = structs::Opt::from_args();
 
+    // Set the thread pool.
+    rayon::ThreadPoolBuilder::new().num_threads(opt.cores).build_global().unwrap();
+
     // I want a logger, but I want to 
     // control it.
     let env = Env::default()

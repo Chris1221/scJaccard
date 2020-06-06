@@ -26,6 +26,10 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub output: PathBuf, */
 
+    /// Number of cores to use. Defaults to 1. 
+    #[structopt(long, default_value = "1")]
+    pub cores: usize,
+
     /// Number of contigs in the ATAC file to iterate over. Defaults to 22. 
     #[structopt(long, default_value = "22")]
     pub nchr: u64,
