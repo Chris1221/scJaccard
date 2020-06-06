@@ -30,7 +30,7 @@
 // warning.
 #![allow(non_snake_case)]
 
-use std::io::Write;
+//use std::io::Write;
 use structopt::StructOpt;
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
@@ -52,7 +52,7 @@ fn main() -> std::io::Result<()> {
     // I want a logger, but I want to 
     // control it.
     let env = Env::default()
-        .filter_or("MY_LOG_LEVEL", "info")
+        .filter_or("MY_LOG_LEVEL", opt.loglevel)
         .write_style_or("MY_LOG_STYLE", "always");
     env_logger::init_from_env(env);
 
@@ -209,13 +209,14 @@ fn main() -> std::io::Result<()> {
     }
 
     info!("Computed jaccard for {} cells.", stats.len());
-    info!("Writing output to {:?}.", &opt.output);
+    //info!("Writing output to {:?}.", &opt.output);
 
-    let mut output = File::create(opt.output)?; 
+    //let mut output = File::create(opt.output)?; 
     for (key, value) in stats {
         let mut s = String::new();
-        write!(s, "{} {}\n", barcodes[&key.to_string()], value.jaccard(*&known.union as f64)).unwrap();
-        output.write(s.as_bytes())?;
+        write!(s, "{} {:.5}", barcodes[&key.to_string()], value.jaccard(*&known.union as f64)).unwrap();
+        println!("{}", s);
+        //output.write(s.as_bytes())?;
     }
 
     info!("scJaccard finished successfully.");

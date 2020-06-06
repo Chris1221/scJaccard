@@ -22,13 +22,17 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub atac: PathBuf,
 
-    /// Output path 
+   /* /// Output file, stdout if not present. 
     #[structopt(short, long, parse(from_os_str))]
-    pub output: PathBuf,
+    pub output: PathBuf, */
 
     /// Number of contigs in the ATAC file to iterate over. Defaults to 22. 
     #[structopt(long, default_value = "22")]
-    pub nchr: u64
+    pub nchr: u64,
+
+    /// Log level. Defaults to Info (useful information and statistics). 
+    #[structopt(long, default_value = "info")]
+    pub loglevel: String
 }
 
 pub struct Record {
