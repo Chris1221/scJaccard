@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::collections::HashMap;
 use rust_htslib::tbx::{self, Read};
 use crate::structs;
+use log::debug;
 
 /// Determines the number of cells to pre-allocate space 
 /// for a HashMap.
@@ -62,25 +63,30 @@ pub fn parse_bed_line(line: Vec<u8>) -> structs::Region {
 pub fn total_isec(cell_barcode: &String, 
               records: &Vec<structs::Record>,
               path_bed: &PathBuf,
-              regions: &HashMap<String, structs::Region>) -> (String, u32) {
+              regions: &HashMap<String, structs::Region>) -> (String, (u32, u32)) {
 
     let mut tbx_reader = tbx::Reader::from_path(path_bed).unwrap();
     let mut isec = 0;
+    let mut nint = 0;
     for r in records { 
         let reg = &regions[&r.i.to_string()];
         let tid = tbx_reader.tid(&reg.chr).unwrap();
         tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
 
+        debug!("* Region start, stop ({}, {})", reg.start, reg.stop); 
 
         for record in tbx_reader.records() {
             let parsed_region = parse_bed_line(record.unwrap());
+            debug!("** Returned regions {}, {}", parsed_region.start, parsed_region.stop);
             isec += get_intersection(reg, &parsed_region);
+            //debug!("*** ISEC now {}", isec);
+            nint += 1;
         }
 
     }
 
     let bar = cell_barcode.clone();
 
-    return (bar, isec as u32);
+    return (bar, (isec as u32, nint as u32) );
     
 }

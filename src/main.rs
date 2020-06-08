@@ -148,7 +148,8 @@ fn main() -> std::io::Result<()> {
                     stats.insert(vec[1].to_string(),
                                  structs::Cell { 
                                      isec: 0, 
-                                     union: regions[&vec[0].to_string()].total() });
+                                     union: regions[&vec[0].to_string()].total(),
+                                    nisec: 0});
                                         
                 } else { 
                     let idx = vec[1].to_string();
@@ -178,7 +179,8 @@ fn main() -> std::io::Result<()> {
     // Holder for the totals.
     let mut known = structs::Cell{ 
         isec: 0, 
-        union: 0 
+        union: 0 ,
+        nisec: 0
     };
 
     let nchr: u64 = opt.nchr;
@@ -200,29 +202,50 @@ fn main() -> std::io::Result<()> {
     //println!("total {}", known.union);
 
     info!("Using {} threads.", rayon::current_num_threads());
-    let isec: HashMap<String, u32> = mtx.par_iter()
+    let isec: HashMap<String, ( u32, u32)> = mtx.par_iter()
         .map(|(key,value)| utils::total_isec(key, value, &path_bed, &regions))
-        .collect::<HashMap<String, u32>>();
+        .collect::<HashMap<String, (u32, u32)>>();
 
     for (key, value) in isec {
         stats
             .get_mut(&key)
             .unwrap()
-            .isec += value
+            .isec += value.0;
+
+        stats
+            .get_mut(&key)
+            .unwrap()
+            .nisec += value.1
     }
 
     info!("Computed jaccard for {} cells.", stats.len());
     //info!("Writing output to {:?}.", &opt.output);
-
     //let mut output = File::create(opt.output)?; 
-    for (key, value) in stats {
+    
+
+
+    if opt.full {  
+        for (key, value) in stats {
         let mut s = String::new();
-        write!(s, "{} {:.5}", barcodes[&key.to_string()], value.jaccard(*&known.union as f64)).unwrap();
-        println!("{}", s);
-        //output.write(s.as_bytes())?;
+            write!(s, "{}, {}, {}, {}, {}, {:5}", 
+                        barcodes[&key.to_string()],
+                        value.union,
+                        value.isec,
+                        value.nisec,
+                        known.union,
+                        value.jaccard(*&known.union as f64)).unwrap();
+            println!("{}", s)
+        }
+    } else { 
+        for (key, value) in stats {
+            let mut s = String::new();
+            write!(s, "{} {:.5}", barcodes[&key.to_string()], value.jaccard(*&known.union as f64)).unwrap();
+            println!("{}", s);
+            //output.write(s.as_bytes())?;
+        }
     }
 
-    info!("scJaccard finished successfully.");
+
     Ok(())
 }
 

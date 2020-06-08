@@ -21,7 +21,8 @@ fn test_success_run() {
     let known_out = "barcode1 0.33333\nbarcode2 0.14286\n";
     let known_out2 = "barcode2 0.14286\nbarcode1 0.33333\n";
 
-    println!("{:?}", output);
-    println!("{:?}", out);
+    // Seems to be somewhat random which order
+    // the cells are printed in, so just check for
+    // either.
     assert!(output.stdout == known_out.as_bytes().to_vec() || output.stdout == known_out2.as_bytes().to_vec() );
 }

@@ -22,9 +22,9 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub atac: PathBuf,
 
-   /* /// Output file, stdout if not present. 
+    /*/// Output file, stdout if not present. 
     #[structopt(short, long, parse(from_os_str))]
-    pub output: PathBuf, */
+    pub output: PathBuf,*/
 
     /// Number of cores to use. Defaults to 1. 
     #[structopt(long, default_value = "1")]
@@ -36,7 +36,12 @@ pub struct Opt {
 
     /// Log level. Defaults to Info (useful information and statistics). 
     #[structopt(long, default_value = "info")]
-    pub loglevel: String
+    pub loglevel: String,
+
+    /// Report full output (includes total number of intersections, isec, union, as well as
+    /// jaccard). 
+    #[structopt(long)]
+    pub full: bool
 }
 
 pub struct Record {
@@ -58,7 +63,8 @@ impl Region {
 
 pub struct Cell {
     pub isec: u32,
-    pub union: u32
+    pub union: u32,
+    pub nisec: u32
 }
 
 impl Cell { 
