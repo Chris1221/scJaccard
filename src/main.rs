@@ -227,7 +227,7 @@ fn main() -> std::io::Result<()> {
     if opt.full {  
         for (key, value) in stats {
         let mut s = String::new();
-            write!(s, "{}, {}, {}, {}, {}, {:5}", 
+            write!(s, "{}, {}, {}, {}, {}, {:.5}", 
                         barcodes[&key.to_string()],
                         value.union,
                         value.isec,
