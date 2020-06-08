@@ -35,8 +35,8 @@ fn test_full_output() {
 
     let output = out
         .get_output();
-    let known_out = "barcode1, 200, 100, 2, 200, 0.33333\nbarcode2, 200, 50, 1, 200, 0.14286\n";
-    let known_out2 = "barcode2, 200, 50, 1, 200, 0.14286\nbarcode1, 200, 100, 2, 200, 0.33333\n";
+    let known_out = "barcode1, 200, 100, 2, 200, 2, 0.33333\nbarcode2, 200, 50, 1, 200, 2, 0.14286\n";
+    let known_out2 = "barcode2, 200, 50, 1, 200, 2, 0.14286\nbarcode1, 200, 100, 2, 200, 2, 0.33333\n";
 
     // Seems to be somewhat random which order
     // the cells are printed in, so just check for

@@ -149,7 +149,8 @@ fn main() -> std::io::Result<()> {
                                  structs::Cell { 
                                      isec: 0, 
                                      union: regions[&vec[0].to_string()].total(),
-                                    nisec: 0});
+                                     nisec: 0,
+                                     nreg: 0});
                                         
                 } else { 
                     let idx = vec[1].to_string();
@@ -180,7 +181,8 @@ fn main() -> std::io::Result<()> {
     let mut known = structs::Cell{ 
         isec: 0, 
         union: 0 ,
-        nisec: 0
+        nisec: 0,
+        nreg: 0
     };
 
     let nchr: u64 = opt.nchr;
@@ -202,9 +204,9 @@ fn main() -> std::io::Result<()> {
     //println!("total {}", known.union);
 
     info!("Using {} threads.", rayon::current_num_threads());
-    let isec: HashMap<String, ( u32, u32)> = mtx.par_iter()
+    let isec: HashMap<String, ( u32, u32, u32)> = mtx.par_iter()
         .map(|(key,value)| utils::total_isec(key, value, &path_bed, &regions))
-        .collect::<HashMap<String, (u32, u32)>>();
+        .collect::<HashMap<String, (u32, u32, u32)>>();
 
     for (key, value) in isec {
         stats
@@ -215,7 +217,13 @@ fn main() -> std::io::Result<()> {
         stats
             .get_mut(&key)
             .unwrap()
-            .nisec += value.1
+            .nisec += value.1;
+
+        stats
+            .get_mut(&key)
+            .unwrap()
+            .nreg += value.2;
+
     }
 
     info!("Computed jaccard for {} cells.", stats.len());
@@ -227,12 +235,13 @@ fn main() -> std::io::Result<()> {
     if opt.full {  
         for (key, value) in stats {
         let mut s = String::new();
-            write!(s, "{}, {}, {}, {}, {}, {:.5}", 
+            write!(s, "{}, {}, {}, {}, {}, {}, {:.5}", 
                         barcodes[&key.to_string()],
                         value.union,
                         value.isec,
                         value.nisec,
                         known.union,
+                        value.nreg,
                         value.jaccard(*&known.union as f64)).unwrap();
             println!("{}", s)
         }

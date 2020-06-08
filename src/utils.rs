@@ -63,11 +63,12 @@ pub fn parse_bed_line(line: Vec<u8>) -> structs::Region {
 pub fn total_isec(cell_barcode: &String, 
               records: &Vec<structs::Record>,
               path_bed: &PathBuf,
-              regions: &HashMap<String, structs::Region>) -> (String, (u32, u32)) {
+              regions: &HashMap<String, structs::Region>) -> (String, (u32, u32, u32)) {
 
     let mut tbx_reader = tbx::Reader::from_path(path_bed).unwrap();
     let mut isec = 0;
     let mut nint = 0;
+    let mut nreg = 0;
     for r in records { 
         let reg = &regions[&r.i.to_string()];
         let tid = tbx_reader.tid(&reg.chr).unwrap();
@@ -82,11 +83,12 @@ pub fn total_isec(cell_barcode: &String,
             //debug!("*** ISEC now {}", isec);
             nint += 1;
         }
+        nreg += 1
 
     }
 
     let bar = cell_barcode.clone();
 
-    return (bar, (isec as u32, nint as u32) );
+    return (bar, (isec as u32, nint as u32, nreg as u32) );
     
 }

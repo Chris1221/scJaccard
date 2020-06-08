@@ -61,10 +61,14 @@ impl Region {
     }
 }
 
+
+/// Holds meta data for a particular cell.
 pub struct Cell {
+    /// Intersection
     pub isec: u32,
     pub union: u32,
-    pub nisec: u32
+    pub nisec: u32,
+    pub nreg: u32
 }
 
 impl Cell { 
