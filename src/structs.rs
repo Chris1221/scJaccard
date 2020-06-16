@@ -1,24 +1,32 @@
 use structopt::StructOpt;
 use std::path::PathBuf;
 
-/// Input options from the Opt crate.
+/// Efficient parrellel computation of the single cell Jaccard index
 #[derive(StructOpt, Debug, Clone)]
-#[structopt(name = "scJaccard_args")]
+#[structopt(name = "scJaccard")]
 pub struct Opt {
 
-    /// Input file
+    /// Read counts per region in MatrixMarket format. Any lines beginning with % will be treated
+    /// as metadata. The first line of data is assumed to contain the totals for each column, and
+    /// is used to preallocate memory. 
     #[structopt(short, long)]
     pub input: PathBuf,
 
-    /// Bed file
+    /// Regions of interest in the same order as specified in the MatrixMarket input in tab
+    /// delimited bed format. No validation is done on chromosome or contig names, but they must be
+    /// in the same format as used for the known bulk ATAC regions (chr1 versus 1, etc).
     #[structopt(short, long, parse(from_os_str))]
     pub bed: PathBuf,
 
-    /// Barcodes 
+    /// Cellular barcodes (or generalised identifiers) for each of the experiments listed in the
+    /// MatrixMarket input. 
     #[structopt(long, parse(from_os_str))]
     pub barcodes: PathBuf,
 
-    /// Known ATAC peaks
+    /// Sorted, tabix indexed bed files compressed with bgzip containing regions of interest for
+    /// particular, potentially purified, bulk populations of cells. See the documentation for a
+    /// discussion on how this data must be formatted, or use preformatted data distributed with
+    /// avocato.
     #[structopt(short, long, parse(from_os_str))]
     pub atac: PathBuf,
 
@@ -26,11 +34,12 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub output: PathBuf,*/
 
-    /// Number of cores to use. Defaults to 1. 
+    /// Number of threads to parrelise the computations over.  
     #[structopt(long, default_value = "1")]
     pub cores: usize,
 
-    /// Number of contigs in the ATAC file to iterate over. Defaults to 22. 
+    /// The number of valid contigs in given bed file. Useful if you are using an atypical genome build, or small
+    /// test data sets.
     #[structopt(long, default_value = "22")]
     pub nchr: u64,
 
