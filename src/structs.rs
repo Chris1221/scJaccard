@@ -34,6 +34,10 @@ pub struct Opt {
     #[structopt(short, long, parse(from_os_str))]
     pub output: PathBuf,*/
 
+    /// Suppress normal output and print intersecting regions as a bed file.
+    #[structopt(long)]
+    pub only_print_bed: bool,
+
     /// Number of threads to parrelise the computations over.  
     #[structopt(long, default_value = "1")]
     pub cores: usize,

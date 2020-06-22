@@ -72,16 +72,27 @@ pub fn total_isec(cell_barcode: &String,
     for r in records { 
         let reg = &regions[&r.i.to_string()];
         let tid = tbx_reader.tid(&reg.chr).unwrap();
-        tbx_reader.fetch(tid, reg.start as u64, reg.stop as u64).unwrap();
+        let s: u64;
+        if reg.start > 10000 {
+            s = reg.start as u64 - 10000;
+        } else {
+            s = reg.start as u64;
+        }
+
+        tbx_reader.fetch(tid, s, reg.stop as u64 + 10000).unwrap();
 
         debug!("* Region start, stop ({}, {})", reg.start, reg.stop); 
 
         for record in tbx_reader.records() {
             let parsed_region = parse_bed_line(record.unwrap());
             debug!("** Returned regions {}, {}", parsed_region.start, parsed_region.stop);
-            isec += get_intersection(reg, &parsed_region);
+            let isecs = get_intersection(reg, &parsed_region);
+            if isecs > 0 {
+                nint += 1
+            }
+            isec += isecs; 
             //debug!("*** ISEC now {}", isec);
-            nint += 1;
+            //nint += 1;
         }
         nreg += 1
 
